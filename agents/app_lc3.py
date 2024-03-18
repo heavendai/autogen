@@ -20,7 +20,7 @@ inference_server_url = "https://gptgod.online/api/v1"
 def auth_callback(username: str, password: str):
     # Fetch the user matching username from your database
     # and compare the hashed password with the value stored in the database
-    if (username, password) == ("admin", "huitingtech"):
+    if (username, password) == ("admin", "autism"):
         return cl.User(
             identifier="admin", metadata={"role": "admin", "provider": "credentials"}
         )
@@ -73,7 +73,6 @@ answer_prefix_tokens=["FINAL", "ANSWER"]
 class MyCustomHandler(BaseCallbackHandler):
     def on_llm_new_token(self, token: str, **kwargs) -> None:
         print(f"My custom handler, token: {token}")
-
 
 
 @cl.on_message
