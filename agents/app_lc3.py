@@ -10,9 +10,15 @@ from langchain.prompts import (
 )
 from langchain_core.callbacks import BaseCallbackHandler
 
-
 import chainlit as cl
+import logging
+import os
 
+log_file = os.path.abspath(__file__)
+print("log_file:", os.path.basename(log_file) + ".log")
+
+logging.basicConfig(level = logging.WARNING, format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s', \
+        filename=log_file, filemode="a")
 
 inference_server_url = "https://gptgod.online/api/v1"
 
@@ -66,7 +72,7 @@ async def on_chat_start():
     chain = LLMChain(llm=model, prompt=prompt, output_parser=StrOutputParser(), memory=memory)
 
     cl.user_session.set("chain", chain)
-    await cl.Message(content="请选择自闭症类型：高功能类型，非语言低功能类型，社交交往困难型", author="Huiting").send()
+    await cl.Message(content="请选择自闭症类型：高功能类型，非语言低功能类型，社交交往困难型\n\n\t【】为说话内容\n\t（）为心理过程", author="Huiting").send()
 
 answer_prefix_tokens=["FINAL", "ANSWER"]
 
@@ -78,16 +84,25 @@ class MyCustomHandler(BaseCallbackHandler):
 @cl.on_message
 async def on_message(message: cl.Message):
 
+    logging.info("\n\n")
+    logging.info("query:%s\n\n" % message.content)
+
     chain = cl.user_session.get("chain")  # type: LLMChain
+
+    async with cl.Step(name="Processing") as parent_step:
+        parent_step.input = "Bot input"
+        parent_step.output = "Processing......"
 
     res = await chain.arun(
         human_input=message.content, 
-        callbacks=[cl.LangchainCallbackHandler(stream_final_answer=True,answer_prefix_tokens=answer_prefix_tokens,)]
+        #callbacks=[cl.LangchainCallbackHandler(stream_final_answer=True,answer_prefix_tokens=answer_prefix_tokens,)]
+        callbacks=[]
     )
 
     #await cl.Message(content=res, author="Teacher").send()
     msg = cl.Message(content="", author="Teacher")
     for token in res:
+        logging.info(token)
         await msg.stream_token(token)
     await msg.send()
 
