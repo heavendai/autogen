@@ -15,12 +15,12 @@ import chainlit as cl
 import logging
 import os
 
-log_file = os.path.abspath(__file__)
-print("log_file:", os.path.basename(log_file) + ".log")
+log_file = os.path.join(os.getcwd(), os.path.abspath(__file__) + ".log")
+print("log_file:", log_file)
 
 logging.basicConfig(level = logging.WARNING, format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s', \
         filename=log_file, filemode="a")
-
+logger = logging.getLogger(__name__)
 
 #inference_server_url = "https://gptgod.online/api/v1"
 #"gpt-4-0125-preview",
@@ -60,7 +60,7 @@ async def on_chat_start():
     prompt = ChatPromptTemplate.from_messages(
         [
             SystemMessage(
-                content="""你是一个超级AI助理，在自闭症教育、治疗领域是专家。我会告诉你关于自闭症儿童的一些分类，以及每个类型下的患者的特点，需要你切换到对应的自闭症指导老师的身份，针对这个分类下的患者做陪聊工作，从而帮助患者成长、生活。你说话应该足够简洁，不要长篇大论，患者不喜欢太复杂的内容，一次理解不了太多的内容。请直接输出说要说的句子，不要输出心理过程，不要输出任务前缘词，直接输出你要说的内容。
+                content="""你是一个在自闭症教育、治疗领域的专家。我会告诉你关于自闭症儿童的一些分类，以及每个类型下的患者的特点，需要你切换到对应的自闭症指导老师的身份，针对这个分类下的患者做陪聊工作，从而帮助患者成长、生活。你说话应该足够简洁，不要长篇大论，患者不喜欢太复杂的内容，一次理解不了太多的内容。请直接输出说要说的句子，不要输出心理过程，不要输出任务前缘词，直接输出你要说的内容。
 
 类型1：高功能自闭症儿童（亚斯伯格综合症）
 这类儿童语言和认知发展相对正常，但社交交往和沟通存在困难。针对有特定兴趣和较好语言沟通能力的儿童设计对话，通过讨论他们感兴趣的主题来鼓励交流和学习。
@@ -74,7 +74,7 @@ async def on_chat_start():
 例如：“如果你今天在学校（或在公园、生日派对）和别的孩子玩，你会选择什么游戏？如果有人不明白游戏规则，可以请你教他们吗？”
 例如：“我今天感觉有点[情绪]，你能帮我想想怎么让情绪变好吗？”
 
-在正式开始后，会告诉你对方是哪种类型的患者，你再切换到对应的身份开始正式的陪聊工作。这是一项很有意义，很需要耐心的工作，你要认真对待，全力发挥自己的能力。
+在正式开始后，会告诉你对方是哪种类型的患者，你再切换到对应的身份开始正式的陪聊工作。这是一项很有意义，很需要耐心的工作，你要认真对待，全力发挥自己的能力。不要认为自己是AI，更不要以“AI:”来开头。
                 """,
             ),
             MessagesPlaceholder(
@@ -102,8 +102,7 @@ class MyCustomHandler(BaseCallbackHandler):
 @cl.on_message
 async def on_message(message: cl.Message):
 
-    logging.info("\n\n")
-    logging.info("query:%s\n\n" % message.content)
+    logger.info("\n===================\nquery:%s\n" % message.content)
 
     chain = cl.user_session.get("chain")  # type: LLMChain
 
@@ -119,8 +118,10 @@ async def on_message(message: cl.Message):
 
     #await cl.Message(content=res, author="Teacher").send()
     msg = cl.Message(content="", author="Teacher")
+    output_content = []
     for token in res:
-        logging.info(token)
+        output_content.append(token)
         await msg.stream_token(token)
     await msg.send()
+    logger.info("".join(output_content) + '\n')
 
