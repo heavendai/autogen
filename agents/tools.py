@@ -9,13 +9,28 @@
 ####################################
 """
 
-from config import serpapi_key
 from serpapi import GoogleSearch
+import http.client
+import json
+import os
+from typing import Type
 
+from langchain.chat_models import ChatOpenAI
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.chains.summarize import load_summarize_chain
+from langchain.prompts import PromptTemplate
+from langchain.pydantic_v1 import BaseModel, Field
+from langchain.tools import BaseTool, StructuredTool, Tool, tool
+
+serpapi_key = '2a9fcda3acf4429dc82fe3b6c7e23c65fbf28b24d54fed9b283e6f2d430439fc'
+gptgod_key = 'sk-2CKHg2AXZdFqchl18m8zEUFlVBT9lVVZIOwTBIRZQjnZgWZR'
+gptgod_inference_server_url = "https://gptgod.online/api/v1"
+
+@tool("search_google_news", return_direct=True)
 def search_google_news(keyword):
-    """
+    """‘
+    在GoogleNews上搜索keyword，得到相关信息链接列表。
     The keyword that's used to search google news.
-
     """
     print(f"Keyword: {keyword}")
     search = GoogleSearch({
@@ -26,17 +41,90 @@ def search_google_news(keyword):
     result = search.get_dict()
     return [item['link'] for item in result['news_results']]
 
-def search_google(keyword):
-    """
-    The keyword that's used to search google engine.
+class GoogleSearchInfo(BaseModel):
+    query: str = Field(description="用于输入Google搜索引擎，查询相关信息。")
 
+class GoogleSearchTool(BaseTool):
+    name = "google_search"
+    description = "在网络上查询、搜索query，用于调研相关信息。可以得到链接列表。"
+    args_schema: Type[BaseModel] = GoogleSearchInfo
+
+    def _run(self, query: str):
+        return google_search_func(query)
+
+google_search = GoogleSearchTool()
+
+#@tool("google_search", args_schema=GoogleSearchInfo, return_direct=True)
+def google_search_func(query: str) -> str:
     """
-    print(f"Keyword: {keyword}")
-    search = GoogleSearch({
-      "q": keyword,
-      "api_key": serpapi_key
+    在网络上查询、搜索query，用于调研相关信息。可以得到链接列表。
+    The query that's used to search google engine.
+    get links.
+    """
+    conn = http.client.HTTPSConnection("google.serper.dev")
+    payload = json.dumps({
+      "q": query
     })
-    result = search.get_dict()
-    return [item['link'] for item in result['news_results']]
+    headers = {
+      'X-API-KEY': '79e580c027a4c4393f2d6268619ea887f8d0d4ff',
+      'Content-Type': 'application/json'
+    }
+    conn.request("POST", "/search", payload, headers)
+    res = conn.getresponse()
+    data = res.read()
+    data = eval(data)
+    if 'organic' not in data:
+        print("NOT FOUND `organic` in data:", data)
+    #return [[x['title'], x['snippet'], x['link']] for x in data['organic']]
+    return [x['link'] for x in data['organic']]
 
+@tool("summary", return_direct=True)
+def summary(content):
+    """
+    对`content`中的文本进行总结
+    """
+    llm = ChatOpenAI(
+        model="gpt-3.5-turbo",
+        openai_api_base=gptgod_inference_server_url,
+        openai_api_key=gptgod_key,
+        temperature=0)
+    text_splitter = RecursiveCharacterTextSplitter(
+        separators=["\n\n", "\n"], chunk_size=10000, chunk_overlap=500)
+    docs = text_splitter.create_documents([content])
+    map_prompt = """
+    请对下面的文本进行以研究为目的的总结:
+    "{text}"
+    总结:
+    """
+    map_prompt_template = PromptTemplate(
+        template=map_prompt, input_variables=["text"])
 
+    summary_chain = load_summarize_chain(
+        llm=llm,
+        chain_type='map_reduce',
+        map_prompt=map_prompt_template,
+        combine_prompt=map_prompt_template,
+        verbose=True
+    )
+
+    output = summary_chain.run(input_documents=docs,)
+
+    return output
+
+def generate_llm_config(tool):
+    # Define the function schema based on the tool's args_schema
+    function_schema = {
+        "name": tool.name.lower().replace(" ", "_"),
+        "description": tool.description,
+        "parameters": {
+            "type": "object",
+            "properties": {},
+            "required": []
+        }
+    }
+
+    if tool.args is not None:
+        function_schema["parameters"]["properties"] = tool.args
+        #function_schema["parameters"]["required"] = [x for x in tool.args]
+
+    return function_schema
