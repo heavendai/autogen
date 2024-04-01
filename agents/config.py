@@ -36,7 +36,7 @@ llm_func_config_gpt = {
     "seed": 42,
     "config_list": config_list_gpt4,
     "temperature": 0.7,
-    "max_tokens": 2048
+    "max_tokens": 1024
 }
 
 llm_func_config_oa = {
@@ -44,8 +44,17 @@ llm_func_config_oa = {
     "seed": 42,
     "config_list": config_list_oa,
     "temperature": 0.7,
+    "max_tokens": 1024
+}
+
+llm_func_config_qwen = {
+   "timeout": 1000,
+    "seed": 42,
+    "config_list": config_list_qwen,
+    "temperature": 0.0000001,
     "max_tokens": 2048
 }
+
 llm_func_config = {
    "timeout": 1000,
     "seed": 42,
