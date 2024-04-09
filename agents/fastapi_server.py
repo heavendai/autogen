@@ -19,7 +19,22 @@ from langchain.prompts import (
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_community.llms import QianfanLLMEndpoint
 
+from typing import Any, Dict, List, Union
+
 ############################################################
+
+class MyCustomHandler(BaseCallbackHandler):
+    def on_chain_start(
+        self, serialized: Dict[str, Any], inputs: Dict[str, Any], **kwargs: Any
+    ) -> Any:
+        print(f"on_chain_start {serialized}")
+
+def on_chain_end(
+        self, serialized: Dict[str, Any], inputs: Dict[str, Any], **kwargs: Any
+    ) -> Any:
+        print(f"on_chain_end{serialized['name']}")
+
+handler = MyCustomHandler()
 
 model = QianfanLLMEndpoint(
         streaming=True,
@@ -57,7 +72,7 @@ prompt = ChatPromptTemplate.from_messages(
     ]
 )
 memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
-chain = LLMChain(llm=model, prompt=prompt, output_parser=StrOutputParser(), memory=memory)
+chain = LLMChain(llm=model, prompt=prompt, output_parser=StrOutputParser(), memory=memory, callbacks=[handler])
 
 
 ############################################################
