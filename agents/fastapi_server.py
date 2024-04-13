@@ -10,6 +10,7 @@ from langchain_openai import ChatOpenAI
 from langchain.schema import StrOutputParser
 from langchain.chains import LLMChain
 from langchain.memory import ConversationBufferMemory
+from langchain.memory.buffer_window import ConversationBufferWindowMemory
 from langchain_core.messages import SystemMessage
 from langchain.prompts import (
     ChatPromptTemplate,
@@ -19,7 +20,10 @@ from langchain.prompts import (
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_community.llms import QianfanLLMEndpoint
 
+from langchain.schema.runnable import RunnableLambda
+
 from typing import Any, Dict, List, Union
+
 
 ############################################################
 
@@ -71,10 +75,17 @@ prompt = ChatPromptTemplate.from_messages(
             ),
     ]
 )
-memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+#memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+memory = ConversationBufferWindowMemory(memory_key="chat_history", return_messages=True, k=50)
 chain = LLMChain(llm=model, prompt=prompt, output_parser=StrOutputParser(), memory=memory, callbacks=[handler])
 
+def clear_memory(str_in: str):
+    print('clearing...', str_in)
+    global memory
+    memory.clear()
+    return "Memory cleaned successfully", 200
 
+#runnable = RunnableLambda(clear_memory).with_types(input_type=memory)
 ############################################################
 
 
@@ -88,6 +99,12 @@ add_routes(
     app,
     chain,
     path="/v1/chat/completions",
+)
+
+add_routes(
+    app,
+    RunnableLambda(clear_memory).with_types(input_type=str),
+    path="/v1/chat/clear"
 )
 
 
