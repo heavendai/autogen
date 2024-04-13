@@ -11,7 +11,7 @@
 import autogen
 from tools import search_google_news, google_search, summary
 from config import config_list_qwen, config_list_gpt4  #, llm_func_config
-from config import llm_func_config, llm_func_config_gpt, llm_func_config_oa, llm_func_config_qwen
+from config import llm_func_config, llm_func_config_gpt, llm_func_config_oa_gpt4, llm_func_config_qwen
 from autogen import AssistantAgent, UserProxyAgent, config_list_from_json
 #from autogen.agentchat.contrib.gpt_assistant_agent import GPTAssistantAgent
 
@@ -151,7 +151,7 @@ autism_child = autogen.AssistantAgent(
 # create an AssistantAgent instance named "assistant"
 assistant= autogen.AssistantAgent(
     name="assistant",
-    llm_config=llm_func_config,
+    llm_config=llm_func_config_oa_gpt4,
     system_message="""
     你是一个AI技术专家，擅于长AI技术运用到各个领域之中，并且擅长阐述讲解使用方法与手段。1
     """

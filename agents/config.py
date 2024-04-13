@@ -20,8 +20,8 @@ config_list = config_list_from_json(env_or_file="OAI_CONFIG_LIST")
 config_list_gpt4 = config_list_from_json(env_or_file="OAI_CONFIG_LIST", filter_dict={
         "model": ["gpt-4-0125-preview"],
     })
-config_list_oa = config_list_from_json(env_or_file="OAI_CONFIG_LIST", filter_dict={
-        "model": ["gpt-3.5-turbo-0125"],
+config_list_oa_gpt4 = config_list_from_json(env_or_file="OAI_CONFIG_LIST", filter_dict={
+        "model": ["gpt-4-1106-preview"],
     })
 
 config_list_qwen = config_list_from_json(env_or_file="OAI_CONFIG_LIST", filter_dict={
@@ -39,10 +39,10 @@ llm_func_config_gpt = {
     "max_tokens": 1024
 }
 
-llm_func_config_oa = {
+llm_func_config_oa_gpt4 = {
     "timeout": 1000,
     "seed": 42,
-    "config_list": config_list_oa,
+    "config_list": config_list_oa_gpt4,
     "temperature": 0.7,
     "max_tokens": 1024
 }
