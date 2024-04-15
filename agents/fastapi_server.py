@@ -21,6 +21,7 @@ from langchain_core.callbacks import BaseCallbackHandler
 from langchain_community.llms import QianfanLLMEndpoint
 
 from langchain.schema.runnable import RunnableLambda
+from langchain_core.runnables import RunnablePassthrough
 
 from typing import Any, Dict, List, Union
 
@@ -33,10 +34,19 @@ class MyCustomHandler(BaseCallbackHandler):
     ) -> Any:
         print(f"on_chain_start {serialized}")
 
-def on_chain_end(
-        self, serialized: Dict[str, Any], inputs: Dict[str, Any], **kwargs: Any
-    ) -> Any:
-        print(f"on_chain_end{serialized['name']}")
+    def on_llm_start(
+        self,
+        serialized: Dict[str, Any],
+        prompts: List[str],
+        **kwargs: Any,
+    ) -> None:
+        print(f"prompts: {prompts}")
+        print(f"on_chain_start {serialized}")
+
+    def on_chain_end(
+            self, serialized: Dict[str, Any], inputs: Dict[str, Any], **kwargs: Any
+        ) -> Any:
+            print(f"on_chain_end{serialized['name']}")
 
 handler = MyCustomHandler()
 
@@ -44,7 +54,7 @@ model = QianfanLLMEndpoint(
         streaming=True,
         model="ERNIE-Bot-4",
         temperature=0.7,
-        max_tokens=20
+        max_tokens=20,
     )
 
 prompt = ChatPromptTemplate.from_messages(
@@ -71,13 +81,19 @@ prompt = ChatPromptTemplate.from_messages(
                 variable_name="chat_history"
             ),
         HumanMessagePromptTemplate.from_template(
-                "{human_input}"
+                "{input}"
             ),
     ]
 )
-#memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
-memory = ConversationBufferWindowMemory(memory_key="chat_history", return_messages=True, k=50)
-chain = LLMChain(llm=model, prompt=prompt, output_parser=StrOutputParser(), memory=memory, callbacks=[handler])
+memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+#memory = ConversationBufferWindowMemory(memory_key="chat_history", return_messages=True, k=50)
+chain_llm = LLMChain(llm=model, prompt=prompt, output_parser=StrOutputParser(), verbose=True, memory=memory)
+
+memory.load_memory_variables({})
+chain = RunnablePassthrough.assign(
+      memory=RunnableLambda(memory.load_memory_variables)
+  ) | prompt | model
+
 
 def clear_memory(str_in: str):
     print('clearing...', str_in)
@@ -90,7 +106,7 @@ def clear_memory(str_in: str):
 
 
 app = FastAPI(
-    title="Huiting ABA Server",
+    title="Test Server",
     version="1.0",
     description="Spin up a simple api server using Langchain's Runnable interfaces",
 )
@@ -100,6 +116,23 @@ add_routes(
     chain,
     path="/v1/chat/completions",
 )
+
+add_routes(
+    app,
+    chain_llm,
+    path="/chain",
+)
+add_routes(
+    app,
+    model,
+    path="/qianfan",
+)
+
+#add_routes(
+#    app,
+#    ChatOpenAI(),
+#    path="/openai",
+#)
 
 add_routes(
     app,
