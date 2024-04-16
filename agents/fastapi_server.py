@@ -81,7 +81,7 @@ prompt = ChatPromptTemplate.from_messages(
                 variable_name="chat_history"
             ),
         HumanMessagePromptTemplate.from_template(
-                "{input}"
+                "{human_input}"
             ),
     ]
 )
