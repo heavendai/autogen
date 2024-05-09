@@ -14,6 +14,7 @@ import http.client
 import json
 import os
 from typing import Type
+import env_info
 
 from langchain.chat_models import ChatOpenAI
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -22,9 +23,6 @@ from langchain.prompts import PromptTemplate
 from langchain.pydantic_v1 import BaseModel, Field
 from langchain.tools import BaseTool, StructuredTool, Tool, tool
 
-serpapi_key = '2a9fcda3acf4429dc82fe3b6c7e23c65fbf28b24d54fed9b283e6f2d430439fc'
-gptgod_key = 'sk-2CKHg2AXZdFqchl18m8zEUFlVBT9lVVZIOwTBIRZQjnZgWZR'
-gptgod_inference_server_url = "https://gptgod.online/api/v1"
 
 @tool("search_google_news", return_direct=True)
 def search_google_news(keyword):
@@ -36,7 +34,7 @@ def search_google_news(keyword):
     search = GoogleSearch({
       "q": keyword,
       "tbm": "nws",
-      "api_key": serpapi_key
+      "api_key": SERPAPI_KEY
     })
     result = search.get_dict()
     return [item['link'] for item in result['news_results']]
@@ -50,7 +48,9 @@ class GoogleSearchTool(BaseTool):
     args_schema: Type[BaseModel] = GoogleSearchInfo
 
     def _run(self, query: str):
-        return google_search_func(query)
+        urls = google_search_func(query)
+        docs = extract_content_from_url(urls)
+        return docs
 
 google_search = GoogleSearchTool()
 
@@ -78,6 +78,18 @@ def google_search_func(query: str) -> str:
     #return [[x['title'], x['snippet'], x['link']] for x in data['organic']]
     return [x['link'] for x in data['organic']]
 
+def extract_content_from_url(urls):
+    """
+    从url中提取内容。
+    """
+    from langchain_community.document_loaders import AsyncHtmlLoader
+    from langchain_community.document_transformers import Html2TextTransformer
+    loader = AsyncHtmlLoader(urls)
+    docs = loader.load()
+    html2text = Html2TextTransformer()
+    docs_transformed = html2text.transform_documents(docs)
+    return docs_transformed
+
 @tool("summary", return_direct=True)
 def summary(content):
     """
@@ -85,12 +97,17 @@ def summary(content):
     """
     llm = ChatOpenAI(
         model="gpt-3.5-turbo",
-        openai_api_base=gptgod_inference_server_url,
-        openai_api_key=gptgod_key,
+        #openai_api_base=GPTGOD_INFERENCE_SERVER_URL,
+        openai_api_key=OPENAI_API_KEY,
         temperature=0)
     text_splitter = RecursiveCharacterTextSplitter(
         separators=["\n\n", "\n"], chunk_size=10000, chunk_overlap=500)
-    docs = text_splitter.create_documents([content])
+    
+    if type(content) == list:
+        docs = splitter.split_documents(docs_transformed)
+    else:
+        docs = text_splitter.create_documents([content])
+    
     map_prompt = """
     请对下面的文本进行以研究为目的的总结:
     "{text}"
@@ -106,9 +123,7 @@ def summary(content):
         combine_prompt=map_prompt_template,
         verbose=True
     )
-
     output = summary_chain.run(input_documents=docs,)
-
     return output
 
 def generate_llm_config(tool):

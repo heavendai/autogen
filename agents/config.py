@@ -12,8 +12,8 @@ import os
 from autogen import config_list_from_json
 from tools import generate_llm_config
 from tools import search_google_news, google_search, summary
+import env_info
 
-os.environ['OPENAI_API_KEY'] = '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'
 
 config_list = config_list_from_json(env_or_file="OAI_CONFIG_LIST")
 
@@ -22,7 +22,7 @@ config_list_gpt4 = config_list_from_json(env_or_file="OAI_CONFIG_LIST", filter_d
     })
 config_list_oa_gpt4 = config_list_from_json(env_or_file="OAI_CONFIG_LIST", filter_dict={
         #"model": ["gpt-4-1106-preview"],
-        "model": ["gpt-4-0125-preview"],
+        "model": ["gpt-4-0125-preview", "gpt-4-turbo"]
     })
 
 config_list_qwen = config_list_from_json(env_or_file="OAI_CONFIG_LIST", filter_dict={
@@ -33,8 +33,6 @@ config_list_mixtral= config_list_from_json(env_or_file="OAI_CONFIG_LIST", filter
     })
 
 llm_func_config_gpt = {
-    "timeout": 1000,
-    "seed": 42,
     "config_list": config_list_gpt4,
     "temperature": 0.7,
     "max_tokens": 1024
@@ -42,10 +40,9 @@ llm_func_config_gpt = {
 
 llm_func_config_oa_gpt4 = {
     "timeout": 1000,
-    "seed": 42,
     "config_list": config_list_oa_gpt4,
-    "temperature": 0.1,
-    "max_tokens": 1024
+    "temperature": 0.1
+    #"max_tokens": 1024
 }
 
 llm_func_config_qwen = {
