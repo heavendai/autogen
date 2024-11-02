@@ -1,6 +1,8 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // LMStudioConfig.cs
+
 using System;
+using System.ClientModel;
 using OpenAI;
 using OpenAI.Chat;
 
@@ -33,7 +35,7 @@ public class LMStudioConfig : ILLMConfig
 
     internal ChatClient CreateChatClient()
     {
-        var client = new OpenAIClient("api-key", new OpenAIClientOptions
+        var client = new OpenAIClient(new ApiKeyCredential("api-key"), new OpenAIClientOptions
         {
             Endpoint = this.Uri,
         });

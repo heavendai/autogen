@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // DotnetInteractiveServiceTest.cs
 
 using FluentAssertions;
@@ -24,7 +24,8 @@ public class DotnetInteractiveServiceTest : IDisposable
         }
 
         _interactiveService = new InteractiveService(_workingDir);
-        _interactiveService.StartAsync(_workingDir, default).Wait();
+        var isRunning = _interactiveService.StartAsync(_workingDir, default).Result;
+        isRunning.Should().BeTrue();
     }
 
     public void Dispose()
@@ -35,13 +36,6 @@ public class DotnetInteractiveServiceTest : IDisposable
     [Fact]
     public async Task ItRunCSharpCodeSnippetTestsAsync()
     {
-        var cts = new CancellationTokenSource();
-        var isRunning = await _interactiveService.StartAsync(_workingDir, cts.Token);
-
-        isRunning.Should().BeTrue();
-
-        _interactiveService.IsRunning().Should().BeTrue();
-
         // test code snippet
         var hello_world = @"
 Console.WriteLine(""hello world"");

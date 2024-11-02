@@ -1,11 +1,10 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // ChatRequestMessageTests.cs
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text.Json;
 using System.Threading.Tasks;
 using AutoGen.Core;
 using AutoGen.Tests;
@@ -17,12 +16,6 @@ namespace AutoGen.AzureAIInference.Tests;
 
 public class ChatRequestMessageTests
 {
-    private readonly JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
-    {
-        WriteIndented = true,
-        IgnoreReadOnlyProperties = false,
-    };
-
     [Fact]
     public async Task ItProcessUserTextMessageAsync()
     {
